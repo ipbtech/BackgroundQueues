@@ -1,15 +1,33 @@
+using BackgroundQueues.Events;
+using BackgroundQueues.Extensions;
+using BackgroundQueues.Services;
+using Coravel;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<OperationExecutor>();
+builder.Services.AddSingleton<OperationQueue>();
+builder.Services.AddHostedService<BackgroundExecutionService>();
+
+builder.Services.AddEvents();
+builder.Services.AddScoped<OperationStartedEventListener>();
+builder.Services.AddScoped<OperationValidatedEventListener>();
+builder.Services.AddScoped<OperationExecutedEventListener>();
+builder.Services.AddScoped<OperationFinishedEventListener>();
+
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -17,9 +35,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
+app.UseCoravelEvents();
 
 app.MapControllers();
-
 app.Run();
